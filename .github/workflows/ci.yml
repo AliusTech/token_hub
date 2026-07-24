@@ -18,9 +18,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        run: |
-          rustup toolchain install 1.96.0 --profile minimal --component rustfmt clippy
-          rustup default 1.96.0
+        uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: rustfmt, clippy
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -63,7 +63,6 @@ jobs:
             -e SERVER_SECRET=ci-test-secret \
             tokenhub:ci-test
           sleep 5
-          # 健康检查
           curl -sf http://localhost:18080/healthz || (echo "healthz failed" && exit 1)
           curl -sf http://localhost:18081/healthz || (echo "admin healthz failed" && exit 1)
           echo "✓ Container health check passed"
