@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 domain = { path = "../domain" }
 storage = { path = "../storage" }
-tiktoken-rs = "0.6"
+tiktoken-rs = "0.12"
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 tracing = { workspace = true }
