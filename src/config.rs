@@ -92,8 +92,7 @@ impl Config {
                 "frp_port",
                 env_opt("FRP_PORT")
                     .or(env_opt("frp_port"))
-                    .map(|s| s.parse::<u16>().ok())
-                    .flatten()
+                    .and_then(|s| s.parse::<u16>().ok())
                     .map(|v| v.to_string()),
             )?
             .set_override_option("frp_token", env_opt("FRP_TOKEN").or(env_opt("frp_token")))?
@@ -106,8 +105,7 @@ impl Config {
                 "frp_remote_port",
                 env_opt("FRP_REMOTE_PORT")
                     .or(env_opt("frp_remote_port"))
-                    .map(|s| s.parse::<u16>().ok())
-                    .flatten()
+                    .and_then(|s| s.parse::<u16>().ok())
                     .map(|v| v.to_string()),
             )?
             .set_override_option("device_id", env_opt("DEVICE_ID").or(env_opt("device_id")))?

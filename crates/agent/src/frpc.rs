@@ -140,14 +140,13 @@ pub async fn supervise_frpc(
 ) {
     loop {
         match start_frpc(&cfg, &service_id, &config_dir).await {
-            Ok((mut child, _)) => loop {
+            Ok((mut child, _)) => {
                 tokio::select! {
                     status = child.wait() => {
                         match status {
                             Ok(s) => tracing::warn!(exit = ?s.code(), "frpc exited, will restart in 5s"),
                             Err(e) => tracing::warn!(error = %e, "frpc wait failed, will restart in 5s"),
                         }
-                        break;
                     }
                     _ = shutdown.changed() => {
                         tracing::info!("shutdown signal received, stopping frpc");
@@ -155,7 +154,7 @@ pub async fn supervise_frpc(
                         return;
                     }
                 }
-            },
+            }
             Err(e) => {
                 tracing::error!(error = %e, "failed to start frpc");
             }

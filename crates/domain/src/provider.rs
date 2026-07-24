@@ -4,17 +4,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ProviderStatus {
     /// 可用
+    #[default]
     Active,
     /// 已禁用（额度耗尽/欠费自动标记 或 管理员手动禁用，不自动恢复）
     Disabled,
-}
-
-impl Default for ProviderStatus {
-    fn default() -> Self {
-        Self::Active
-    }
 }
 
 /// 供应商凭证。api_key 加密存储；额度监控字段用于 80% 告警。

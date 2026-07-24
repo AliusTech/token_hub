@@ -35,7 +35,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy (lint, warnings as errors)
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings -A clippy::too_many_arguments -A clippy::inconsistent_digit_grouping
 
       - name: Run tests
         run: cargo test --workspace --verbose

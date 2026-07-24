@@ -19,17 +19,13 @@ pub struct LogicalModel {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum RoutingStrategy {
     /// 按 level 升序顺次尝试
+    #[default]
     Sequential,
     /// 按 weight 加权随机
     Random,
-}
-
-impl Default for RoutingStrategy {
-    fn default() -> Self {
-        Self::Sequential
-    }
 }
 
 /// 逻辑模型 ↔ 供应商映射（每个映射带 level/weight/strategy）

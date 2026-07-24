@@ -9,7 +9,7 @@
 use crate::error::{ApiError, ApiResult};
 use crate::middleware::RequireAdmin;
 use crate::state::AppState;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::Deserialize;

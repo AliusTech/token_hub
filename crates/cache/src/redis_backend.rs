@@ -41,7 +41,7 @@ impl CacheBackend for RedisCache {
         let mut conn = self.conn.clone();
         match ttl {
             Some(d) => {
-                let _: () = conn.set_ex(key, value, d.as_secs().max(1) as u64).await?;
+                let _: () = conn.set_ex(key, value, d.as_secs().max(1)).await?;
             }
             None => {
                 let _: () = conn.set(key, value).await?;

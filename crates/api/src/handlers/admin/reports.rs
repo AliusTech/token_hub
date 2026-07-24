@@ -51,7 +51,7 @@ pub async fn report_usage(
     // MVP：返回所有账号 + 所有 provider 的汇总（从预聚合表）
     // 完整多维报表需要额外的聚合查询，这里返回基础数据
     let usage_repo = state.inner.usage_repo.clone();
-    let audit_repo = state.inner.audit_repo.clone();
+    let _audit_repo = state.inner.audit_repo.clone();
 
     // 查询所有账号的汇总（需要账号列表）
     let account_repo = storage::AccountRepo::new(state.inner.store.clone());
@@ -105,7 +105,7 @@ pub async fn report_cost(
             .usage_repo
             .provider_summary(&p.id, &period)
             .await?;
-        let (used, limit, threshold, alert_sent) = quota_repo
+        let (used, limit, _threshold, alert_sent) = quota_repo
             .get_quota(&p.id)
             .await?
             .unwrap_or((0, None, 80, false));

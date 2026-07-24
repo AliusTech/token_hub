@@ -86,7 +86,7 @@ pub async fn run(cli: Cli) -> Result<()> {
 
 async fn create_admin(
     database_url: &str,
-    server_secret: &str,
+    _server_secret: &str,
     phone: Option<String>,
     password: Option<String>,
     role: &str,

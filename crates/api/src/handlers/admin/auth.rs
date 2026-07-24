@@ -137,7 +137,7 @@ pub async fn refresh(
 
 /// POST /v1/admin/auth/logout — 吊销当前 access token
 pub async fn logout(State(state): State<AppState>, req: Request) -> ApiResult<impl IntoResponse> {
-    let (mut parts, _body) = req.into_parts();
+    let (parts, _body) = req.into_parts();
     let token = extract_bearer(&parts)?;
     let admin_repo = storage::AdminUserRepo::new(state.inner.store.clone());
     let access_hash = auth::hash_session_token(&token, state.secret());
@@ -147,14 +147,14 @@ pub async fn logout(State(state): State<AppState>, req: Request) -> ApiResult<im
 
 /// GET /v1/admin/auth/me
 pub async fn me(State(state): State<AppState>, req: Request) -> ApiResult<impl IntoResponse> {
-    let (mut parts, _body) = req.into_parts();
+    let (parts, _body) = req.into_parts();
     let token = extract_bearer(&parts)?;
     let principal = authenticate_admin(&token, &state).await?;
     let admin_repo = storage::AdminUserRepo::new(state.inner.store.clone());
     let admin = admin_repo
         .find_by_id(&principal.id)
         .await?
-        .ok_or_else(|| ApiError::NotFound)?;
+        .ok_or(ApiError::NotFound)?;
     Ok(Json(serde_json::json!({
         "id": admin.id,
         "phone": admin.phone,
