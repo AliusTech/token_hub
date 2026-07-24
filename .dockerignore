@@ -1,0 +1,31 @@
+# 构建产物（7GB+，绝不进 Docker 上下文）
+target/
+
+# 版本控制
+.git/
+.gitignore
+
+# 本地数据/环境
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+.env.local
+data/
+
+# 文档/示例（不影响运行时）
+docs/
+*.md
+
+# OS/IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.log
+
+# Docker 自身（避免递归）
+Dockerfile
+docker-compose*.yml
+.dockerignore

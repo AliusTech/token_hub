@@ -1,0 +1,17 @@
+# 远程管理接入（frpc）配置模板
+# 环境变量由 entrypoint 脚本注入（见 tun/entrypoint.sh）
+#
+# TCP 模式：映射 frps 的 6001 端口到本地 Admin API
+# 访问：http://frp.alius.tech:6001/healthz
+# allowPorts: 6000-6100
+
+serverAddr = "${TUN_SERVER}"
+serverPort = ${TUN_PORT}
+auth.token = "${TUN_TOKEN}"
+
+[[proxies]]
+name = "tokenhub-admin"
+type = "tcp"
+localIP = "${TUN_LOCAL_ADDR}"
+localPort = ${TUN_LOCAL_PORT}
+remotePort = ${TUN_REMOTE_PORT}

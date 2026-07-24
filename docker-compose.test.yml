@@ -1,0 +1,26 @@
+# 本地测试用 docker-compose（仅 tokenhub，跳过 tun 和 redis 外部服务）
+# 使用：docker compose -f docker-compose.test.yml up --build
+services:
+  tokenhub:
+    build: .
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=sqlite:///data/tokenhub.db
+      - REDIS_URL=memory
+      - CHAT_LISTEN=0.0.0.0:8080
+      - ADMIN_LISTEN=0.0.0.0:8081
+      - SERVER_SECRET=${SERVER_SECRET:-docker-test-secret}
+    volumes:
+      - tokenhub-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: "no"
+
+volumes:
+  tokenhub-data:

@@ -1,0 +1,50 @@
+# TokenHub docker-compose
+# tun 通道已内嵌到 tokenhub 服务（不再需要独立 frpc 容器）
+# 配置 FRP_SERVER 等环境变量后，通过 API/CLI 开通通道
+services:
+  tokenhub:
+    build: .
+    image: tokenhub
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=sqlite:///data/tokenhub.db
+      - REDIS_URL=redis://redis:6379
+      - CHAT_LISTEN=0.0.0.0:8080
+      - ADMIN_LISTEN=0.0.0.0:8081
+      - SERVER_SECRET=${SERVER_SECRET:?SERVER_SECRET must be set}
+      - RUST_LOG=info
+      # === Tun 通道配置（可选：配置后可通过 API 开通远程管理通道）===
+      # 不配置则 tun 功能不可用，服务正常启动
+      - FRP_SERVER=${FRP_SERVER:-}
+      - FRP_PORT=${FRP_PORT:-7000}
+      - FRP_TOKEN=${FRP_TOKEN:-}
+      - FRP_SUBDOMAIN_HOST=${FRP_SUBDOMAIN_HOST:-tun.alius.tech}
+      - FRP_MODE=${FRP_MODE:-http_subdomain}
+      - FRP_REMOTE_PORT=${FRP_REMOTE_PORT:-6001}
+      - FRPC_BINARY=${FRPC_BINARY:-/usr/local/bin/frpc}
+    volumes:
+      - tokenhub-data:/data
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+
+volumes:
+  tokenhub-data:
+  redis-data:

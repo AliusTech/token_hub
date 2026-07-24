@@ -1,0 +1,23 @@
+[package]
+name = "agent"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+storage = { path = "../storage" }
+cache = { path = "../cache" }
+auth = { path = "../auth" }
+audit = { path = "../audit" }
+api = { path = "../api" }
+axum = "0.7"
+tokio = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+rand = "0.8"
+async-trait = { workspace = true }

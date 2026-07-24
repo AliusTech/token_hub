@@ -1,0 +1,71 @@
+# 持续集成：push/PR 时运行测试 + lint + Docker 构建验证
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal --component rustfmt clippy
+          rustup default 1.96.0
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-1.96-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (lint, warnings as errors)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run tests
+        run: cargo test --workspace --verbose
+
+  docker-build:
+    name: Docker Build Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (verify Dockerfile)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: tokenhub:ci-test
+          load: true
+
+      - name: Smoke test — container starts and healthz responds
+        run: |
+          docker run -d --name th-test -p 18080:8080 -p 18081:8081 \
+            -e SERVER_SECRET=ci-test-secret \
+            tokenhub:ci-test
+          sleep 5
+          # 健康检查
+          curl -sf http://localhost:18080/healthz || (echo "healthz failed" && exit 1)
+          curl -sf http://localhost:18081/healthz || (echo "admin healthz failed" && exit 1)
+          echo "✓ Container health check passed"
+          docker logs th-test 2>&1 | tail -10
+          docker rm -f th-test

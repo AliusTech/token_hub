@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/domain",
+    "crates/storage",
+    "crates/cache",
+    "crates/auth",
+    "crates/billing",
+    "crates/router-llm",
+    "crates/audit",
+    "crates/api",
+    "crates/cli",
+    "crates/agent",
+    ".", # the main binary crate (src/main.rs)
+]
+
+[package]
+name = "token_hub"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "crates/domain" }
+storage = { path = "crates/storage" }
+cache = { path = "crates/cache" }
+auth = { path = "crates/auth" }
+billing = { path = "crates/billing" }
+router-llm = { path = "crates/router-llm" }
+audit = { path = "crates/audit" }
+api = { path = "crates/api" }
+agent = { path = "crates/agent" }
+cli = { path = "crates/cli" }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+axum = "0.7"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+config = { version = "0.14", default-features = false, features = ["toml"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[workspace.dependencies]
+# 共享依赖版本统一管理
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "1"
+uuid = { version = "1", features = ["v4"] }
+tracing = "0.1"
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+async-trait = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

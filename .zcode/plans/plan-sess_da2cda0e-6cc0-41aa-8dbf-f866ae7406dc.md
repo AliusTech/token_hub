@@ -1,0 +1,1 @@
+需要修改 frpc.rs 让 stderr 输出到容器日志（Stdio::inherit 替代 piped），这样能看到 frpc 连接 frps 的详细错误。然后重建容器测试。

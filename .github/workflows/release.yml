@@ -1,0 +1,425 @@
+# 发布：打 tag v* 时构建全平台安装包 + Docker 镜像发布到 GHCR
+#
+# 产物：
+# - macOS: .dmg 安装包（含 .app bundle）
+# - Windows: .exe 安装包（NSIS 安装程序）
+# - Linux: .tar.gz（二进制，服务器部署用）
+# - Docker: ghcr.io/aliustech/token_hub:{tag}
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+  APP_NAME: tokenhub
+  BINARY_NAME: token_hub
+
+jobs:
+  # ===== macOS: .app bundle + .dmg =====
+  build-macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            arch: apple-silicon
+          - target: x86_64-apple-darwin
+            arch: intel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup target add ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: macos-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create .app bundle
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          APP_DIR="${{ env.APP_NAME }}.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          # 复制二进制
+          cp target/${{ matrix.target }}/release/${{ env.BINARY_NAME }} "$APP_DIR/Contents/MacOS/${{ env.APP_NAME }}"
+          # Info.plist（配置为 Agent 后台应用，不显示 Dock 图标）
+          cat > "$APP_DIR/Contents/Info.plist" << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key><string>TokenHub</string>
+            <key>CFBundleDisplayName</key><string>TokenHub Agent</string>
+            <key>CFBundleIdentifier</key><string>tech.alius.tokenhub</string>
+            <key>CFBundleVersion</key><string>${VERSION}</string>
+            <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+            <key>CFBundleExecutable</key><string>${{ env.APP_NAME }}</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>LSUIElement</key><true/>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          # 设置可执行权限
+          chmod +x "$APP_DIR/Contents/MacOS/${{ env.APP_NAME }}"
+
+      - name: Create .dmg installer
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          DMG_NAME="${{ env.APP_NAME }}-${VERSION}-macos-${{ matrix.arch }}.dmg"
+          # 用 hdiutil 创建 DMG
+          hdiutil create -volname "${{ env.APP_NAME }}" -srcfolder "${{ env.APP_NAME }}.app" -ov -format UDZO "$DMG_NAME"
+          # SHA256
+          shasum -a 256 "$DMG_NAME" > "$DMG_NAME.sha256"
+          echo "DMG_FILE=$DMG_NAME" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.DMG_FILE }}
+          path: |
+            ${{ env.DMG_FILE }}
+            ${{ env.DMG_FILE }}.sha256
+
+  # ===== Windows: .exe 安装程序（NSIS）=====
+  build-windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Install NSIS
+        run: |
+          choco install nsis -y
+          echo "C:\Program Files (x86)\NSIS" >> $GITHUB_PATH
+
+      - name: Create NSIS installer
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v',''
+          $exeName = "${{ env.APP_NAME }}-$version-windows-x86_64-setup.exe"
+          # 复制二进制到打包目录
+          New-Item -ItemType Directory -Force -Path package
+          Copy-Item target/x86_64-pc-windows-msvc/release/${{ env.BINARY_NAME }}.exe package/${{ env.APP_NAME }}.exe
+          # 生成 NSIS 脚本
+          @"
+          !define APPNAME "TokenHub"
+          !define VERSION "$version"
+          Name "`${APPNAME} Agent"
+          OutFile "$exeName"
+          InstallDir "`$PROGRAMFILES\`${APPNAME}"
+          RequestExecutionLevel admin
+          Page directory
+          Page instfiles
+          Section ""
+            SetOutPath "`$INSTDIR"
+            File "package\${{ env.APP_NAME }}.exe"
+            WriteUninstaller "`$INSTDIR\uninstall.exe"
+            CreateShortcut "`$SMPROGRAMS\`${APPNAME}.lnk" "`$INSTDIR\${{ env.APP_NAME }}.exe"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APPNAME}" "DisplayName" "`${APPNAME}"
+            WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APPNAME}" "UninstallString" "`$INSTDIR\uninstall.exe"
+          SectionEnd
+          Section "Uninstall"
+            Delete "`$INSTDIR\${{ env.APP_NAME }}.exe"
+            Delete "`$INSTDIR\uninstall.exe"
+            Delete "`$SMPROGRAMS\`${APPNAME}.lnk"
+            DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APPNAME}"
+          SectionEnd
+          "@ | Out-File -Encoding ascii installer.nsi
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+          # SHA256
+          $hash = (Get-FileHash $exeName -Algorithm SHA256).Hash
+          "$hash".ToLower() | Out-File -Encoding ascii "$exeName.sha256"
+          echo "EXE_FILE=$exeName" >> $env:GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXE_FILE }}
+          path: |
+            ${{ env.EXE_FILE }}
+            ${{ env.EXE_FILE }}.sha256
+
+  # ===== Linux: .deb 安装包 + .tar.gz =====
+  build-linux:
+    name: Linux x86_64 (.deb + .tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup target add x86_64-unknown-linux-gnu
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: linux-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Create .tar.gz（裸二进制，服务器/Docker 部署用）
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          TARBALL="${{ env.APP_NAME }}-${VERSION}-linux-x86_64.tar.gz"
+          mkdir -p dist
+          cp target/x86_64-unknown-linux-gnu/release/${{ env.BINARY_NAME }} dist/${{ env.APP_NAME }}
+          tar czf "$TARBALL" -C dist .
+          shasum -a 256 "$TARBALL" > "$TARBALL.sha256"
+
+      - name: Create .deb 安装包（Ubuntu/Debian）
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          PKG_DIR="debroot"
+          # 目录结构
+          mkdir -p "$PKG_DIR/usr/bin"
+          mkdir -p "$PKG_DIR/usr/lib/systemd/system"
+          mkdir -p "$PKG_DIR/etc/tokenhub"
+          mkdir -p "$PKG_DIR/DEBIAN"
+
+          # 复制二进制
+          cp target/x86_64-unknown-linux-gnu/release/${{ env.BINARY_NAME }} "$PKG_DIR/usr/bin/${{ env.APP_NAME }}"
+          chmod +x "$PKG_DIR/usr/bin/${{ env.APP_NAME }}"
+
+          # 环境变量配置模板
+          cat > "$PKG_DIR/etc/tokenhub/tokenhub.env" << 'ENVFILE'
+          # TokenHub 配置（编辑后 systemctl restart tokenhub 生效）
+          RUN_MODE=server
+          DATABASE_URL=sqlite:///var/lib/tokenhub/tokenhub.db
+          REDIS_URL=memory
+          SERVER_SECRET=change-me-please
+          CHAT_LISTEN=0.0.0.0:8080
+          ADMIN_LISTEN=0.0.0.0:8081
+          RUST_LOG=info
+          ENVFILE
+
+          # systemd 服务文件
+          cat > "$PKG_DIR/usr/lib/systemd/system/tokenhub.service" << 'SVCFILE'
+          [Unit]
+          Description=TokenHub AI Gateway
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=tokenhub
+          Group=tokenhub
+          EnvironmentFile=/etc/tokenhub/tokenhub.env
+          ExecStart=/usr/bin/tokenhub
+          Restart=on-failure
+          RestartSec=5
+          StateDirectory=tokenhub
+
+          [Install]
+          WantedBy=multi-user.target
+          SVCFILE
+
+          # .desktop 文件（桌面 Agent 模式用）
+          mkdir -p "$PKG_DIR/usr/share/applications"
+          cat > "$PKG_DIR/usr/share/applications/tokenhub.desktop" << 'DESKFILE'
+          [Desktop Entry]
+          Name=TokenHub Agent
+          Comment=TokenHub Local Agent
+          Exec=/usr/bin/tokenhub
+          Terminal=false
+          Type=Application
+          Categories=Network;Utility;
+          X-GNOME-Autostart-enabled=true
+          DESKFILE
+
+          # postinst：创建用户 + 目录 + 启用服务
+          cat > "$PKG_DIR/DEBIAN/postinst" << 'POSTINST'
+          #!/bin/bash
+          set -e
+          # 创建专用用户（如不存在）
+          if ! id -u tokenhub &>/dev/null; then
+            useradd -r -s /usr/sbin/nologin tokenhub
+          fi
+          # 创建数据目录
+          mkdir -p /var/lib/tokenhub
+          chown tokenhub:tokenhub /var/lib/tokenhub
+          # 注册服务（不自动启动，用户配置 env 后手动启动）
+          systemctl daemon-reset >/dev/null 2>&1 || true
+          echo ""
+          echo "TokenHub 已安装。"
+          echo "  1. 编辑配置：sudo nano /etc/tokenhub/tokenhub.env（设置 SERVER_SECRET）"
+          echo "  2. 启动服务：sudo systemctl enable --now tokenhub"
+          echo "  3. 初始化管理员：sudo -u tokenhub tokenhub admin create --phone <手机号> --password <密码>"
+          echo ""
+          POSTINST
+          chmod 755 "$PKG_DIR/DEBIAN/postinst"
+
+          # prerm：停止服务
+          cat > "$PKG_DIR/DEBIAN/prerm" << 'PRERMFILE'
+          #!/bin/bash
+          systemctl stop tokenhub >/dev/null 2>&1 || true
+          PRERMFILE
+          chmod 755 "$PKG_DIR/DEBIAN/prerm"
+
+          # control 文件
+          INSTALLED_SIZE=$(du -sk "$PKG_DIR" | cut -f1)
+          cat > "$PKG_DIR/DEBIAN/control" << EOF
+          Package: tokenhub
+          Version: ${VERSION}
+          Architecture: amd64
+          Maintainer: Alius <dev@alius.tech>
+          Installed-Size: ${INSTALLED_SIZE}
+          Depends: libc6
+          Section: net
+          Priority: optional
+          Description: TokenHub AI Gateway
+           TokenHub is an enterprise LLM infrastructure service (AI Gateway)
+           that provides a unified OpenAI-compatible API, multi-provider
+           aggregation, credit-based billing, and multi-tenant governance.
+          EOF
+
+          # 构建 .deb
+          DEB_NAME="${{ env.APP_NAME }}_${VERSION}_amd64.deb"
+          dpkg-deb --build --root-owner-group "$PKG_DIR" "$DEB_NAME"
+          shasum -a 256 "$DEB_NAME" > "$DEB_NAME.sha256"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            ${{ env.APP_NAME }}-*.tar.gz
+            ${{ env.APP_NAME }}-*.tar.gz.sha256
+            ${{ env.APP_NAME }}_*.deb
+            ${{ env.APP_NAME }}_*.deb.sha256
+
+  # ===== Docker 镜像 → GHCR =====
+  build-docker:
+    name: Docker → GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===== 创建 GitHub Release（汇总所有产物）=====
+  create-release:
+    name: GitHub Release
+    needs: [build-macos, build-windows, build-linux, build-docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/**/*.dmg
+            artifacts/**/*.dmg.sha256
+            artifacts/**/*.exe
+            artifacts/**/*.exe.sha256
+            artifacts/**/*.tar.gz
+            artifacts/**/*.tar.gz.sha256
+            artifacts/**/*.deb
+            artifacts/**/*.deb.sha256
+          body: |
+            ## 安装包下载
+
+            | 平台 | 文件 | 说明 |
+            |---|---|---|
+            | macOS Apple Silicon | `.dmg` | 双击安装，Agent 后台运行（菜单栏图标） |
+            | macOS Intel | `.dmg` | 同上 |
+            | Windows | `.exe` | NSIS 安装程序，含开始菜单快捷方式 |
+            | Ubuntu/Debian | `.deb` | `dpkg -i` 安装，含 systemd 服务 + 配置文件 |
+            | Linux 通用 | `.tar.gz` | 裸二进制，服务器/Docker 部署用 |
+
+            ## Docker
+
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            docker run -d -p 8080:8080 -p 8081:8081 \
+              -e SERVER_SECRET=your-secret \
+              -v tokenhub-data:/data \
+              ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ```
+
+            ## 首次使用
+
+            ```bash
+            # 初始化管理员
+            token_hub admin create --phone <手机号> --password <密码>
+            ```

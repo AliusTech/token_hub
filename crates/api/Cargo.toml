@@ -1,0 +1,26 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+storage = { path = "../storage" }
+cache = { path = "../cache" }
+auth = { path = "../auth" }
+billing = { path = "../billing" }
+router-llm = { path = "../router-llm" }
+audit = { path = "../audit" }
+axum = { version = "0.7", features = ["macros"] }
+tokio = { workspace = true }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors", "limit"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+sqlx = { version = "0.8", default-features = false, features = ["sqlite"] }
