@@ -146,7 +146,9 @@ impl UsageLogRepo {
         .bind(period)
         .fetch_optional(&self.store.pool)
         .await?;
-        Ok(row.map(|r| (r.get(0), r.get(1), r.get(2), r.get(3))).unwrap_or((0, 0, 0, 0)))
+        Ok(row
+            .map(|r| (r.get(0), r.get(1), r.get(2), r.get(3)))
+            .unwrap_or((0, 0, 0, 0)))
     }
 
     /// 供应商某时段总 token（成本侧）。
@@ -245,8 +247,12 @@ mod tests {
         let store = crate::connect_in_memory().await.unwrap();
         let repo = UsageLogRepo::new(store);
         let now: i64 = 1_700_000_000_000;
-        repo.insert_and_aggregate(entry("acct_a", Some("prov_1"), 10, now), "202607").await.unwrap();
-        repo.insert_and_aggregate(entry("acct_a", Some("prov_1"), 20, now + 1), "202607").await.unwrap();
+        repo.insert_and_aggregate(entry("acct_a", Some("prov_1"), 10, now), "202607")
+            .await
+            .unwrap();
+        repo.insert_and_aggregate(entry("acct_a", Some("prov_1"), 20, now + 1), "202607")
+            .await
+            .unwrap();
         let (p, c, credits, calls) = repo.account_summary("acct_a", "202607").await.unwrap();
         assert_eq!(p, 200); // 2 * 100
         assert_eq!(c, 100); // 2 * 50

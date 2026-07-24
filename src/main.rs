@@ -71,7 +71,10 @@ async fn run_server(cfg: config::Config) -> anyhow::Result<()> {
         )
         .init();
 
-    tracing::info!(version = env!("CARGO_PKG_VERSION"), "TokenHub Server starting");
+    tracing::info!(
+        version = env!("CARGO_PKG_VERSION"),
+        "TokenHub Server starting"
+    );
 
     let store = storage::connect(&cfg.database_url).await?;
     let secret = auth::ServerSecret::new(&cfg.server_secret);
@@ -139,7 +142,11 @@ async fn run_agent(cfg: config::Config) -> anyhow::Result<()> {
         subdomain_host: std::env::var("FRP_SUBDOMAIN_HOST")
             .unwrap_or_else(|_| "tun.alius.tech".to_string()),
         local_addr: "127.0.0.1".to_string(),
-        local_port: admin_listen.parse::<SocketAddr>().ok().map(|a| a.port()).unwrap_or(8081),
+        local_port: admin_listen
+            .parse::<SocketAddr>()
+            .ok()
+            .map(|a| a.port())
+            .unwrap_or(8081),
         frpc_binary: std::env::var("FRPC_BINARY").unwrap_or_else(|_| "frpc".to_string()),
         mode: agent::TunnelMode::HttpSubdomain,
     });

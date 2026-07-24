@@ -169,7 +169,11 @@ fn fallback_path(kind: &str) -> std::path::PathBuf {
 
 fn write_fallback(path: &std::path::Path, lines: &[String]) {
     use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+    {
         for line in lines {
             let _ = writeln!(f, "{line}");
         }

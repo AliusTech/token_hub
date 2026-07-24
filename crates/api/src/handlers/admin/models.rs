@@ -205,7 +205,12 @@ pub async fn set_rates(
     let now = chrono::Utc::now().timestamp();
 
     // 读取旧费率，便于审计记录 before/after
-    let before = state.inner.model_repo.get(&id).await?.ok_or(ApiError::NotFound)?;
+    let before = state
+        .inner
+        .model_repo
+        .get(&id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
 
     let updated = state
         .inner

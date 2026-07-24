@@ -50,7 +50,14 @@ pub async fn create_policy(
     let repo = storage::PolicyRepo::new(state.inner.store.clone());
     let models_refs: Vec<&str> = req.allowed_models.iter().map(|s| s.as_str()).collect();
     let policy = repo
-        .create(&id, &req.name, &models_refs, req.monthly_credit_cap, req.description.as_deref(), now)
+        .create(
+            &id,
+            &req.name,
+            &models_refs,
+            req.monthly_credit_cap,
+            req.description.as_deref(),
+            now,
+        )
         .await?;
     Ok(Json(policy))
 }
@@ -77,7 +84,14 @@ pub async fn update_policy(
     let repo = storage::PolicyRepo::new(state.inner.store.clone());
     let models_refs: Vec<&str> = req.allowed_models.iter().map(|s| s.as_str()).collect();
     let _ = repo
-        .update(&id, &req.name, &models_refs, req.monthly_credit_cap, req.description.as_deref(), now)
+        .update(
+            &id,
+            &req.name,
+            &models_refs,
+            req.monthly_credit_cap,
+            req.description.as_deref(),
+            now,
+        )
         .await?;
     Ok(Json(serde_json::json!({"ok": true})))
 }
@@ -113,7 +127,9 @@ pub async fn bind_account_policy(
     }
     let now = chrono::Utc::now().timestamp_millis();
     let repo = storage::AccountRepo::new(state.inner.store.clone());
-    let ok = repo.set_policy(&account_id, Some(&req.policy_id), now).await?;
+    let ok = repo
+        .set_policy(&account_id, Some(&req.policy_id), now)
+        .await?;
     if !ok {
         return Err(ApiError::NotFound);
     }

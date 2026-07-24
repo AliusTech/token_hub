@@ -3,7 +3,7 @@
 //! - sequential：按 level 升序排列（level 1 优先），同 level 按 weight 降序。
 //! - random：同 level 内按 weight 加权随机，再按 level 升序分组。
 
-use domain::{RoutingStrategy};
+use domain::RoutingStrategy;
 use rand::Rng;
 
 /// 一个路由候选（对应一条 model_providers 映射）。
@@ -48,11 +48,7 @@ impl RouteSelector {
     /// sequential：level 升序，同 level 按 weight 降序。
     fn sequential_order(candidates: &[RouteCandidate]) -> Vec<RouteCandidate> {
         let mut sorted = candidates.to_vec();
-        sorted.sort_by(|a, b| {
-            a.level
-                .cmp(&b.level)
-                .then_with(|| b.weight.cmp(&a.weight))
-        });
+        sorted.sort_by(|a, b| a.level.cmp(&b.level).then_with(|| b.weight.cmp(&a.weight)));
         sorted
     }
 
@@ -176,6 +172,9 @@ mod tests {
         }
         // 允许 ±10% 偏差
         let ratio = first_count as f64 / trials as f64;
-        assert!(ratio > 0.80 && ratio < 0.99, "expected ~90%, got {ratio:.2}");
+        assert!(
+            ratio > 0.80 && ratio < 0.99,
+            "expected ~90%, got {ratio:.2}"
+        );
     }
 }

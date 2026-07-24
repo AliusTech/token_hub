@@ -56,7 +56,10 @@ impl QuotaErrorDetector {
                     }
                     403 => {
                         let lower = body.to_lowercase();
-                        if lower.contains("quota") || lower.contains("billing") || lower.contains("limit") {
+                        if lower.contains("quota")
+                            || lower.contains("billing")
+                            || lower.contains("limit")
+                        {
                             FallbackOutcome::ShouldDisableAndFallback {
                                 reason: format!("forbidden-quota (403): {}", truncate(body, 200)),
                             }
@@ -141,7 +144,10 @@ mod tests {
             status: 400,
             body: "invalid model".to_string(),
         };
-        assert_eq!(QuotaErrorDetector::classify(&err), FallbackOutcome::NoFallback);
+        assert_eq!(
+            QuotaErrorDetector::classify(&err),
+            FallbackOutcome::NoFallback
+        );
     }
 
     #[test]
@@ -150,7 +156,10 @@ mod tests {
             status: 401,
             body: "invalid api key".to_string(),
         };
-        assert_eq!(QuotaErrorDetector::classify(&err), FallbackOutcome::NoFallback);
+        assert_eq!(
+            QuotaErrorDetector::classify(&err),
+            FallbackOutcome::NoFallback
+        );
     }
 
     #[test]
@@ -192,6 +201,9 @@ mod tests {
             status: 403,
             body: "access denied".to_string(),
         };
-        assert_eq!(QuotaErrorDetector::classify(&err), FallbackOutcome::NoFallback);
+        assert_eq!(
+            QuotaErrorDetector::classify(&err),
+            FallbackOutcome::NoFallback
+        );
     }
 }

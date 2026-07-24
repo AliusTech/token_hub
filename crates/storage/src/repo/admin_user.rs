@@ -141,7 +141,10 @@ impl AdminUserRepo {
     }
 
     /// 查询 access token。
-    pub async fn find_access_token(&self, token_hash: &str) -> anyhow::Result<Option<AccessTokenRecord>> {
+    pub async fn find_access_token(
+        &self,
+        token_hash: &str,
+    ) -> anyhow::Result<Option<AccessTokenRecord>> {
         let row = sqlx::query(
             "SELECT admin_id, expires_at, revoked FROM admin_access_tokens WHERE token_hash = ?",
         )
@@ -231,8 +234,7 @@ impl AdminUserRepo {
 
 fn map_admin_user(r: &sqlx::sqlite::SqliteRow) -> AdminUserRecord {
     let roles_json: String = r.get("roles");
-    let roles: Vec<String> =
-        serde_json::from_str(&roles_json).unwrap_or_default();
+    let roles: Vec<String> = serde_json::from_str(&roles_json).unwrap_or_default();
     AdminUserRecord {
         id: r.get("id"),
         phone: r.get("phone"),

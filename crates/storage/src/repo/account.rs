@@ -93,7 +93,12 @@ impl AccountRepo {
         Ok(res.rows_affected() > 0)
     }
 
-    pub async fn set_policy(&self, id: &str, policy_id: Option<&str>, now: i64) -> anyhow::Result<bool> {
+    pub async fn set_policy(
+        &self,
+        id: &str,
+        policy_id: Option<&str>,
+        now: i64,
+    ) -> anyhow::Result<bool> {
         let res = sqlx::query("UPDATE accounts SET policy_id = ?, updated_at = ? WHERE id = ?")
             .bind(policy_id)
             .bind(now)
@@ -130,7 +135,10 @@ mod tests {
     async fn account_crud() {
         let store = crate::connect_in_memory().await.unwrap();
         let repo = AccountRepo::new(store);
-        let a = repo.create("acct_1", Some("zhangsan"), None, Some("note"), 1).await.unwrap();
+        let a = repo
+            .create("acct_1", Some("zhangsan"), None, Some("note"), 1)
+            .await
+            .unwrap();
         assert_eq!(a.id, "acct_1");
         let got = repo.get("acct_1").await.unwrap().unwrap();
         assert_eq!(got.external_id.as_deref(), Some("zhangsan"));

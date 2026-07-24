@@ -10,8 +10,8 @@ use crate::state::AppState;
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
-use domain::Scope;
 use domain::token::display_prefix;
+use domain::Scope;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -125,7 +125,15 @@ pub async fn create_token(
     state
         .inner
         .token_repo
-        .create(&id, &hash, &prefix, &account.id, req.name.as_deref(), None, now)
+        .create(
+            &id,
+            &hash,
+            &prefix,
+            &account.id,
+            req.name.as_deref(),
+            None,
+            now,
+        )
         .await?;
 
     // 明文仅此一次返回

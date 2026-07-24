@@ -144,11 +144,21 @@ mod tests {
         let repo = PolicyRepo::new(store);
         let id = new_id();
         let p = repo
-            .create(&id, "default", &["gpt-4", "claude"], Some(100_000), Some("d"), 1)
+            .create(
+                &id,
+                "default",
+                &["gpt-4", "claude"],
+                Some(100_000),
+                Some("d"),
+                1,
+            )
             .await
             .unwrap();
         assert_eq!(p.name, "default");
-        assert_eq!(p.allowed_models, vec!["gpt-4".to_string(), "claude".to_string()]);
+        assert_eq!(
+            p.allowed_models,
+            vec!["gpt-4".to_string(), "claude".to_string()]
+        );
         assert_eq!(p.monthly_credit_cap, Some(100_000));
 
         let got = repo.get(&id).await.unwrap().unwrap();
@@ -177,11 +187,10 @@ mod tests {
         repo.create(&id, "to_update", &["a"], Some(100), None, 1)
             .await
             .unwrap();
-        assert!(
-            repo.update(&id, "renamed", &["b", "c"], Some(500), Some("desc"), 2)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .update(&id, "renamed", &["b", "c"], Some(500), Some("desc"), 2)
+            .await
+            .unwrap());
         let got = repo.get(&id).await.unwrap().unwrap();
         assert_eq!(got.name, "renamed");
         assert_eq!(got.allowed_models, vec!["b".to_string(), "c".to_string()]);
@@ -210,8 +219,12 @@ mod tests {
         let repo = PolicyRepo::new(store);
         let id1 = new_id();
         let id2 = new_id();
-        repo.create(&id1, "p1", &["a"], None, None, 1).await.unwrap();
-        repo.create(&id2, "p2", &["b"], None, None, 2).await.unwrap();
+        repo.create(&id1, "p1", &["a"], None, None, 1)
+            .await
+            .unwrap();
+        repo.create(&id2, "p2", &["b"], None, None, 2)
+            .await
+            .unwrap();
         let all = repo.list().await.unwrap();
         assert_eq!(all.len(), 2);
     }

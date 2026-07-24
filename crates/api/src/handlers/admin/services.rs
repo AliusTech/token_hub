@@ -59,18 +59,38 @@ pub async fn create_service(
     let client_secret_hash = auth::hash_api_token(&client_secret_plain, state.secret());
 
     let scopes_refs: Vec<&str> = req.scopes.iter().map(|s| s.as_str()).collect();
-    let ip_refs: Option<Vec<&str>> = req.ip_whitelist.as_ref().map(|ips| ips.iter().map(|s| s.as_str()).collect());
+    let ip_refs: Option<Vec<&str>> = req
+        .ip_whitelist
+        .as_ref()
+        .map(|ips| ips.iter().map(|s| s.as_str()).collect());
 
     let svc_repo = storage::ServiceAccountRepo::new(state.inner.store.clone());
     let record = svc_repo
-        .create(&id, &client_id, &client_secret_hash, &req.name, &scopes_refs, ip_refs.as_deref(), now)
+        .create(
+            &id,
+            &client_id,
+            &client_secret_hash,
+            &req.name,
+            &scopes_refs,
+            ip_refs.as_deref(),
+            now,
+        )
         .await?;
 
     // 审计
     let _ = state
         .inner
         .audit_repo
-        .insert("admin", Some(&principal.id), "service.create", Some("service"), Some(&record.id), None, None, now)
+        .insert(
+            "admin",
+            Some(&principal.id),
+            "service.create",
+            Some("service"),
+            Some(&record.id),
+            None,
+            None,
+            now,
+        )
         .await;
 
     Ok(Json(serde_json::json!({
@@ -105,9 +125,18 @@ pub async fn update_service(
         let _ = svc_repo.set_status(&id, status, now).await?;
     }
     if req.scopes.is_some() || req.ip_whitelist.is_some() {
-        let scopes_refs: Vec<&str> = req.scopes.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect()).unwrap_or_default();
-        let ip_refs: Option<Vec<&str>> = req.ip_whitelist.as_ref().map(|ips| ips.iter().map(|s| s.as_str()).collect());
-        let _ = svc_repo.update_scopes_ips(&id, &scopes_refs, ip_refs.as_deref(), now).await?;
+        let scopes_refs: Vec<&str> = req
+            .scopes
+            .as_ref()
+            .map(|v| v.iter().map(|s| s.as_str()).collect())
+            .unwrap_or_default();
+        let ip_refs: Option<Vec<&str>> = req
+            .ip_whitelist
+            .as_ref()
+            .map(|ips| ips.iter().map(|s| s.as_str()).collect());
+        let _ = svc_repo
+            .update_scopes_ips(&id, &scopes_refs, ip_refs.as_deref(), now)
+            .await?;
     }
     Ok(Json(serde_json::json!({"ok": true})))
 }

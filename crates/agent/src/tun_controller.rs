@@ -171,7 +171,9 @@ mod tests {
         assert!(status.service_id.is_some());
         let sid = status.service_id.unwrap();
         assert_eq!(sid.len(), 6);
-        assert!(sid.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()));
+        assert!(sid
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()));
         assert!(status.url.as_ref().unwrap().ends_with(".tun.alius.tech"));
         assert_eq!(status.mode, "http_subdomain");
         // 清理

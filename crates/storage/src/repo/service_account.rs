@@ -84,8 +84,7 @@ impl ServiceAccountRepo {
         .await?;
         Ok(row.map(|r| {
             let scopes: String = r.get("scopes");
-            let scopes: Vec<String> =
-                serde_json::from_str(&scopes).unwrap_or_default();
+            let scopes: Vec<String> = serde_json::from_str(&scopes).unwrap_or_default();
             (
                 r.get("id"),
                 r.get("client_secret_hash"),
@@ -162,23 +161,25 @@ impl ServiceAccountRepo {
         new_secret_hash: &str,
         now: i64,
     ) -> anyhow::Result<bool> {
-        let res =
-            sqlx::query("UPDATE service_accounts SET client_secret_hash = ?, updated_at = ? WHERE id = ?")
-                .bind(new_secret_hash)
-                .bind(now)
-                .bind(id)
-                .execute(&self.store.pool)
-                .await?;
+        let res = sqlx::query(
+            "UPDATE service_accounts SET client_secret_hash = ?, updated_at = ? WHERE id = ?",
+        )
+        .bind(new_secret_hash)
+        .bind(now)
+        .bind(id)
+        .execute(&self.store.pool)
+        .await?;
         Ok(res.rows_affected() > 0)
     }
 
     pub async fn set_status(&self, id: &str, status: &str, now: i64) -> anyhow::Result<bool> {
-        let res = sqlx::query("UPDATE service_accounts SET status = ?, updated_at = ? WHERE id = ?")
-            .bind(status)
-            .bind(now)
-            .bind(id)
-            .execute(&self.store.pool)
-            .await?;
+        let res =
+            sqlx::query("UPDATE service_accounts SET status = ?, updated_at = ? WHERE id = ?")
+                .bind(status)
+                .bind(now)
+                .bind(id)
+                .execute(&self.store.pool)
+                .await?;
         Ok(res.rows_affected() > 0)
     }
 }
@@ -242,9 +243,17 @@ mod tests {
         let store = crate::connect_in_memory().await.unwrap();
         let repo = ServiceAccountRepo::new(store);
         let id = format!("sa_{}", uuid::Uuid::new_v4());
-        repo.create(&id, "client_auth", "secret_hash_1", "Bot", &["read"], None, 1)
-            .await
-            .unwrap();
+        repo.create(
+            &id,
+            "client_auth",
+            "secret_hash_1",
+            "Bot",
+            &["read"],
+            None,
+            1,
+        )
+        .await
+        .unwrap();
         let auth = repo.find_auth("client_auth").await.unwrap().unwrap();
         assert_eq!(auth.0, id);
         assert_eq!(auth.1, "secret_hash_1");
@@ -275,11 +284,10 @@ mod tests {
         repo.create(&id, "client_upd", "h", "Bot", &["read"], None, 1)
             .await
             .unwrap();
-        assert!(
-            repo.update_scopes_ips(&id, &["read", "admin"], Some(&["1.2.3.4"]), 2)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .update_scopes_ips(&id, &["read", "admin"], Some(&["1.2.3.4"]), 2)
+            .await
+            .unwrap());
         let rec = repo.find_by_id(&id).await.unwrap().unwrap();
         assert_eq!(rec.scopes, vec!["read".to_string(), "admin".to_string()]);
         assert_eq!(rec.ip_whitelist, Some(vec!["1.2.3.4".to_string()]));

@@ -103,7 +103,11 @@ remotePort = {remote_port}
 }
 
 /// 将配置写入临时文件并启动 frpc 子进程。
-pub async fn start_frpc(cfg: &FrpcConfig, service_id: &str, config_dir: &Path) -> anyhow::Result<(Child, std::path::PathBuf)> {
+pub async fn start_frpc(
+    cfg: &FrpcConfig,
+    service_id: &str,
+    config_dir: &Path,
+) -> anyhow::Result<(Child, std::path::PathBuf)> {
     std::fs::create_dir_all(config_dir)?;
     let config_path = config_dir.join("frpc.toml");
     let toml_content = generate_frpc_toml(cfg, service_id);
@@ -136,24 +140,22 @@ pub async fn supervise_frpc(
 ) {
     loop {
         match start_frpc(&cfg, &service_id, &config_dir).await {
-            Ok((mut child, _)) => {
-                loop {
-                    tokio::select! {
-                        status = child.wait() => {
-                            match status {
-                                Ok(s) => tracing::warn!(exit = ?s.code(), "frpc exited, will restart in 5s"),
-                                Err(e) => tracing::warn!(error = %e, "frpc wait failed, will restart in 5s"),
-                            }
-                            break;
+            Ok((mut child, _)) => loop {
+                tokio::select! {
+                    status = child.wait() => {
+                        match status {
+                            Ok(s) => tracing::warn!(exit = ?s.code(), "frpc exited, will restart in 5s"),
+                            Err(e) => tracing::warn!(error = %e, "frpc wait failed, will restart in 5s"),
                         }
-                        _ = shutdown.changed() => {
-                            tracing::info!("shutdown signal received, stopping frpc");
-                            let _ = child.kill().await;
-                            return;
-                        }
+                        break;
+                    }
+                    _ = shutdown.changed() => {
+                        tracing::info!("shutdown signal received, stopping frpc");
+                        let _ = child.kill().await;
+                        return;
                     }
                 }
-            }
+            },
             Err(e) => {
                 tracing::error!(error = %e, "failed to start frpc");
             }
@@ -190,7 +192,11 @@ mod tests {
         for _ in 0..100 {
             let id = generate_service_id();
             assert_eq!(id.len(), 6, "service ID must be 6 chars");
-            assert!(id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()), "must be lowercase+digits");
+            assert!(
+                id.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()),
+                "must be lowercase+digits"
+            );
             // 不含易混淆字符
             assert!(!id.contains('0'), "must not contain 0");
             assert!(!id.contains('o'), "must not contain o");
@@ -203,7 +209,11 @@ mod tests {
     #[test]
     fn service_id_randomness() {
         let ids: std::collections::HashSet<_> = (0..50).map(|_| generate_service_id()).collect();
-        assert!(ids.len() > 40, "50 generated IDs should be mostly unique, got {}", ids.len());
+        assert!(
+            ids.len() > 40,
+            "50 generated IDs should be mostly unique, got {}",
+            ids.len()
+        );
     }
 
     #[test]

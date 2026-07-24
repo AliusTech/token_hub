@@ -17,7 +17,8 @@ pub fn generate_api_token() -> String {
 /// 计算 token 的 HMAC-SHA256 hex 哈希（用于 DB 唯一索引 + 查表）。
 /// 使用 HMAC 而非裸 SHA256：让 hash 依赖服务器密钥，即使 DB 泄露也无法直接比对。
 pub fn hash_api_token(token: &str, secret: &ServerSecret) -> String {
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
+    let mut mac =
+        HmacSha256::new_from_slice(secret.as_bytes()).expect("HMAC accepts any key length");
     mac.update(token.as_bytes());
     let bytes = mac.finalize().into_bytes();
     bytes.iter().map(|b| format!("{b:02x}")).collect()

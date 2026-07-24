@@ -160,7 +160,18 @@ mod tests {
         )
         .await
         .unwrap();
-        repo.insert("system", None, "provider.disable", Some("provider"), Some("prov_1"), None, None, 2).await.unwrap();
+        repo.insert(
+            "system",
+            None,
+            "provider.disable",
+            Some("provider"),
+            Some("prov_1"),
+            None,
+            None,
+            2,
+        )
+        .await
+        .unwrap();
         let all = repo.list(None, None, 10, 0).await.unwrap();
         assert_eq!(all.len(), 2);
         let by_action = repo.list(None, Some("rate.update"), 10, 0).await.unwrap();

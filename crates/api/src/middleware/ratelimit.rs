@@ -13,7 +13,10 @@ use axum::response::Response;
 /// Chat 端限流中间件。
 /// 从请求中提取 Authorization Bearer → token_hash 作为限流键。
 /// 默认每 60s 最多 60 次（可配置）。
-pub async fn chat_ratelimit(req: Request<axum::body::Body>, next: Next) -> Result<Response, ApiError> {
+pub async fn chat_ratelimit(
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Result<Response, ApiError> {
     let state = req
         .extensions()
         .get::<AppState>()
@@ -30,19 +33,21 @@ pub async fn chat_ratelimit(req: Request<axum::body::Body>, next: Next) -> Resul
     // 用 token 的 hash 作为限流键（避免明文 token 进缓存 key）
     let rate_key = format!("token:{}", short_hash(key));
     let limiter = cache::RateLimiter::new(state.inner.cache.clone());
-    let allowed = limiter
-        .check(&rate_key, 60, 60)
-        .await
-        .unwrap_or(true); // 缓存失败不阻断（降级放行）
+    let allowed = limiter.check(&rate_key, 60, 60).await.unwrap_or(true); // 缓存失败不阻断（降级放行）
 
     if !allowed {
-        return Err(ApiError::BadRequest("rate limit exceeded, too many requests".into()));
+        return Err(ApiError::BadRequest(
+            "rate limit exceeded, too many requests".into(),
+        ));
     }
     Ok(next.run(req).await)
 }
 
 /// Admin 端限流中间件（按 IP）。
-pub async fn admin_ratelimit(req: Request<axum::body::Body>, next: Next) -> Result<Response, ApiError> {
+pub async fn admin_ratelimit(
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Result<Response, ApiError> {
     let state = req
         .extensions()
         .get::<AppState>()
@@ -58,10 +63,7 @@ pub async fn admin_ratelimit(req: Request<axum::body::Body>, next: Next) -> Resu
 
     let rate_key = format!("ip:{ip}");
     let limiter = cache::RateLimiter::new(state.inner.cache.clone());
-    let allowed = limiter
-        .check(&rate_key, 30, 60)
-        .await
-        .unwrap_or(true);
+    let allowed = limiter.check(&rate_key, 30, 60).await.unwrap_or(true);
 
     if !allowed {
         return Err(ApiError::BadRequest("rate limit exceeded".into()));

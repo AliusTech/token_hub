@@ -90,13 +90,12 @@ impl TokenRepo {
 
     /// 按 id 吊销：status='revoked', revoked_at=now。返回是否命中行。
     pub async fn revoke(&self, id: &str, now: i64) -> anyhow::Result<bool> {
-        let res = sqlx::query(
-            "UPDATE api_tokens SET status = 'revoked', revoked_at = ? WHERE id = ?",
-        )
-        .bind(now)
-        .bind(id)
-        .execute(&self.store.pool)
-        .await?;
+        let res =
+            sqlx::query("UPDATE api_tokens SET status = 'revoked', revoked_at = ? WHERE id = ?")
+                .bind(now)
+                .bind(id)
+                .execute(&self.store.pool)
+                .await?;
         Ok(res.rows_affected() > 0)
     }
 
@@ -142,13 +141,15 @@ mod tests {
         // 建依赖的 account 行（与 credits.rs 测试同款）
         let account_id = format!("acct_{}", Uuid::new_v4());
         let now: i64 = 1_700_000_000_000;
-        sqlx::query("INSERT INTO accounts (id, status, created_at, updated_at) VALUES (?, 'active', ?, ?)")
-            .bind(&account_id)
-            .bind(now)
-            .bind(now)
-            .execute(&store.pool)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO accounts (id, status, created_at, updated_at) VALUES (?, 'active', ?, ?)",
+        )
+        .bind(&account_id)
+        .bind(now)
+        .bind(now)
+        .execute(&store.pool)
+        .await
+        .unwrap();
         let repo = TokenRepo::new(store);
         (repo, account_id)
     }

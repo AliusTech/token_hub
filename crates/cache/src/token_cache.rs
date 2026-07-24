@@ -30,7 +30,10 @@ impl TokenCache {
 
     /// 读取缓存的 token 信息。未命中返回 Ok(None)。
     pub async fn get(&self, token_hash: &str) -> Result<Option<TokenInfo>, crate::CacheError> {
-        let val = self.store.get_string(&format!("{KEY_PREFIX}{token_hash}")).await?;
+        let val = self
+            .store
+            .get_string(&format!("{KEY_PREFIX}{token_hash}"))
+            .await?;
         match val {
             Some(s) => Ok(Some(serde_json::from_str(&s)?)),
             None => Ok(None),

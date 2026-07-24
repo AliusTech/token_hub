@@ -23,7 +23,13 @@ pub fn estimate_prompt_tokens(text: &str) -> i64 {
 pub fn estimate_messages_tokens(messages: &[String]) -> i64 {
     let bpe = match cl100k_base() {
         Ok(bpe) => bpe,
-        Err(_) => return messages.iter().map(|m| m.chars().count() as i64).sum::<i64>() + messages.len() as i64 * 4,
+        Err(_) => {
+            return messages
+                .iter()
+                .map(|m| m.chars().count() as i64)
+                .sum::<i64>()
+                + messages.len() as i64 * 4
+        }
     };
     let mut total = 0i64;
     for msg in messages {
@@ -60,6 +66,9 @@ mod tests {
     #[test]
     fn chinese_text_estimates() {
         let tokens = estimate_prompt_tokens("你好世界，这是一个测试");
-        assert!(tokens > 0, "chinese text should estimate tokens, got {tokens}");
+        assert!(
+            tokens > 0,
+            "chinese text should estimate tokens, got {tokens}"
+        );
     }
 }

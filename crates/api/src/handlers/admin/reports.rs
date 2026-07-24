@@ -71,7 +71,10 @@ pub async fn report_usage(
         }
     }
 
-    let total_credits: i64 = by_account.iter().filter_map(|v| v["credits"].as_i64()).sum();
+    let total_credits: i64 = by_account
+        .iter()
+        .filter_map(|v| v["credits"].as_i64())
+        .sum();
     let total_calls: i64 = by_account.iter().filter_map(|v| v["calls"].as_i64()).sum();
 
     Ok(Json(serde_json::json!({
@@ -97,9 +100,18 @@ pub async fn report_cost(
     let providers = provider_repo.list().await?;
     let mut by_provider = Vec::new();
     for p in &providers {
-        let tokens = state.inner.usage_repo.provider_summary(&p.id, &period).await?;
-        let (used, limit, threshold, alert_sent) = quota_repo.get_quota(&p.id).await?.unwrap_or((0, None, 80, false));
-        let pct = limit.map(|l| if l > 0 { used * 100 / l } else { 0 }).unwrap_or(0);
+        let tokens = state
+            .inner
+            .usage_repo
+            .provider_summary(&p.id, &period)
+            .await?;
+        let (used, limit, threshold, alert_sent) = quota_repo
+            .get_quota(&p.id)
+            .await?
+            .unwrap_or((0, None, 80, false));
+        let pct = limit
+            .map(|l| if l > 0 { used * 100 / l } else { 0 })
+            .unwrap_or(0);
         by_provider.push(serde_json::json!({
             "provider_id": p.id,
             "name": p.name,
@@ -131,7 +143,12 @@ pub async fn audit_logs(
     let logs = state
         .inner
         .audit_repo
-        .list(params.actor_kind.as_deref(), params.action.as_deref(), limit, offset)
+        .list(
+            params.actor_kind.as_deref(),
+            params.action.as_deref(),
+            limit,
+            offset,
+        )
         .await?;
     Ok(Json(serde_json::json!({ "data": logs })))
 }
@@ -150,7 +167,12 @@ pub async fn usage_logs(
     let logs = state
         .inner
         .usage_repo
-        .list(params.account_id.as_deref(), params.provider_id.as_deref(), limit, offset)
+        .list(
+            params.account_id.as_deref(),
+            params.provider_id.as_deref(),
+            limit,
+            offset,
+        )
         .await?;
     Ok(Json(serde_json::json!({ "data": logs })))
 }

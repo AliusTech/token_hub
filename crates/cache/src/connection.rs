@@ -51,7 +51,11 @@ impl CacheStore {
 /// - 空 / "memory" / "none"：直接用内存缓存，不尝试 Redis
 pub async fn connect(redis_url: &str) -> CacheStore {
     let normalized = redis_url.trim();
-    if normalized.is_empty() || normalized == "memory" || normalized == "none" || normalized == "redis://" {
+    if normalized.is_empty()
+        || normalized == "memory"
+        || normalized == "none"
+        || normalized == "redis://"
+    {
         tracing::info!("using memory cache (no Redis configured)");
         return CacheStore {
             backend: Arc::new(MemoryCache::new()),

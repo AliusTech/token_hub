@@ -59,13 +59,12 @@ impl CreditsRepo {
         now: i64,
     ) -> anyhow::Result<Option<i64>> {
         let mut tx = self.store.pool.begin().await?;
-        let current: Option<(i64, i64)> = sqlx::query(
-            "SELECT balance, version FROM credits WHERE account_id = ?",
-        )
-        .bind(account_id)
-        .fetch_optional(&mut *tx)
-        .await?
-        .map(|r| (r.get::<i64, _>("balance"), r.get::<i64, _>("version")));
+        let current: Option<(i64, i64)> =
+            sqlx::query("SELECT balance, version FROM credits WHERE account_id = ?")
+                .bind(account_id)
+                .fetch_optional(&mut *tx)
+                .await?
+                .map(|r| (r.get::<i64, _>("balance"), r.get::<i64, _>("version")));
 
         let Some((balance, version)) = current else {
             tx.rollback().await?;
@@ -121,12 +120,10 @@ impl CreditsRepo {
         now: i64,
     ) -> anyhow::Result<Option<(String, i64)>> {
         let mut tx = self.store.pool.begin().await?;
-        let row = sqlx::query(
-            "SELECT balance, version FROM credits WHERE account_id = ?",
-        )
-        .bind(account_id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let row = sqlx::query("SELECT balance, version FROM credits WHERE account_id = ?")
+            .bind(account_id)
+            .fetch_optional(&mut *tx)
+            .await?;
         let Some(row) = row else {
             tx.rollback().await?;
             return Ok(None);
@@ -182,12 +179,11 @@ impl CreditsRepo {
     ) -> anyhow::Result<Option<i64>> {
         let mut tx = self.store.pool.begin().await?;
 
-        let hold = sqlx::query(
-            "SELECT id, account_id, amount, status FROM credit_holds WHERE id = ?",
-        )
-        .bind(hold_id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let hold =
+            sqlx::query("SELECT id, account_id, amount, status FROM credit_holds WHERE id = ?")
+                .bind(hold_id)
+                .fetch_optional(&mut *tx)
+                .await?;
         let Some(hold) = hold else {
             tx.rollback().await?;
             return Ok(None);
@@ -202,13 +198,11 @@ impl CreditsRepo {
 
         // 结算差额：held 释放 actual_cost 部分计入真实消费，剩余退还 balance
         let refund = held_amount - actual_cost; // actual>held 时为负（需补扣）
-        // 乐观锁更新
-        let row = sqlx::query(
-            "SELECT balance, held, version FROM credits WHERE account_id = ?",
-        )
-        .bind(&account_id)
-        .fetch_one(&mut *tx)
-        .await?;
+                                                // 乐观锁更新
+        let row = sqlx::query("SELECT balance, held, version FROM credits WHERE account_id = ?")
+            .bind(&account_id)
+            .fetch_one(&mut *tx)
+            .await?;
         let balance: i64 = row.get("balance");
         let held: i64 = row.get("held");
         let version: i64 = row.get("version");
@@ -265,12 +259,10 @@ impl CreditsRepo {
     /// 释放冻结（未实际调用，全额退还）。
     pub async fn release_hold(&self, hold_id: &str, now: i64) -> anyhow::Result<Option<i64>> {
         let mut tx = self.store.pool.begin().await?;
-        let hold = sqlx::query(
-            "SELECT account_id, amount, status FROM credit_holds WHERE id = ?",
-        )
-        .bind(hold_id)
-        .fetch_optional(&mut *tx)
-        .await?;
+        let hold = sqlx::query("SELECT account_id, amount, status FROM credit_holds WHERE id = ?")
+            .bind(hold_id)
+            .fetch_optional(&mut *tx)
+            .await?;
         let Some(hold) = hold else {
             tx.rollback().await?;
             return Ok(None);
@@ -381,13 +373,15 @@ mod tests {
         // 建依赖的 account 行
         let account_id = format!("acct_{}", Uuid::new_v4());
         let now: i64 = 1_700_000_000_000;
-        sqlx::query("INSERT INTO accounts (id, status, created_at, updated_at) VALUES (?, 'active', ?, ?)")
-            .bind(&account_id)
-            .bind(now)
-            .bind(now)
-            .execute(&store.pool)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO accounts (id, status, created_at, updated_at) VALUES (?, 'active', ?, ?)",
+        )
+        .bind(&account_id)
+        .bind(now)
+        .bind(now)
+        .execute(&store.pool)
+        .await
+        .unwrap();
         let repo = CreditsRepo::new(store);
         repo.init(&account_id, now).await.unwrap();
         (repo, account_id)
@@ -396,9 +390,15 @@ mod tests {
     #[tokio::test]
     async fn adjust_works() {
         let (repo, acct) = setup().await;
-        let after = repo.adjust(&acct, 1000, Some("init"), Some("admin1"), 1).await.unwrap();
+        let after = repo
+            .adjust(&acct, 1000, Some("init"), Some("admin1"), 1)
+            .await
+            .unwrap();
         assert_eq!(after, Some(1000));
-        let after2 = repo.adjust(&acct, -300, Some("use"), Some("system"), 2).await.unwrap();
+        let after2 = repo
+            .adjust(&acct, -300, Some("use"), Some("system"), 2)
+            .await
+            .unwrap();
         assert_eq!(after2, Some(700));
         // 扣到负数应失败
         let fail = repo.adjust(&acct, -10000, None, None, 3).await.unwrap();
@@ -411,7 +411,11 @@ mod tests {
     async fn hold_and_settle_refunds_excess() {
         let (repo, acct) = setup().await;
         repo.adjust(&acct, 1000, None, None, 1).await.unwrap();
-        let (hold_id, _) = repo.place_hold(&acct, 800, Some("req1"), 2).await.unwrap().unwrap();
+        let (hold_id, _) = repo
+            .place_hold(&acct, 800, Some("req1"), 2)
+            .await
+            .unwrap()
+            .unwrap();
         let c = repo.get(&acct).await.unwrap().unwrap();
         assert_eq!(c.balance, 200);
         assert_eq!(c.held, 800);
@@ -462,7 +466,7 @@ mod tests {
                 let r = CreditsRepo::new(store);
                 loop {
                     match r.adjust(&acct, -100, None, Some("t"), 2).await.unwrap() {
-                        Some(_) => return true,  // 成功扣一次
+                        Some(_) => return true, // 成功扣一次
                         None => tokio::time::sleep(std::time::Duration::from_millis(1)).await,
                     }
                 }
@@ -495,7 +499,10 @@ mod tests {
             let acct = acct.clone();
             handles.push(tokio::spawn(async move {
                 let r = CreditsRepo::new(store);
-                r.place_hold(&acct, 100, Some("c"), 2).await.unwrap().is_some()
+                r.place_hold(&acct, 100, Some("c"), 2)
+                    .await
+                    .unwrap()
+                    .is_some()
             }));
         }
         let mut held = 0;
@@ -504,7 +511,10 @@ mod tests {
                 held += 1;
             }
         }
-        assert_eq!(held, 10, "exactly 10 holds of 100 should succeed against 1000 balance");
+        assert_eq!(
+            held, 10,
+            "exactly 10 holds of 100 should succeed against 1000 balance"
+        );
         let c = repo.get(&acct).await.unwrap().unwrap();
         assert_eq!(c.balance, 0);
         assert_eq!(c.held, 1000);

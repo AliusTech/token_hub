@@ -488,11 +488,18 @@ mod tests {
         assert!(repo.list().await.unwrap().len() >= 1);
 
         // 不更新密钥（None）
-        assert!(
-            repo.update("prov_1", "renamed", "https://v2", None, Some(2_000_000), 90, 200)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .update(
+                "prov_1",
+                "renamed",
+                "https://v2",
+                None,
+                Some(2_000_000),
+                90,
+                200
+            )
+            .await
+            .unwrap());
         let after = repo.get("prov_1").await.unwrap().unwrap();
         assert_eq!(after.name, "renamed");
         assert_eq!(after.base_url, "https://v2");
@@ -501,27 +508,36 @@ mod tests {
         assert_eq!(after.quota_threshold, 90);
 
         // 更新密钥
-        assert!(
-            repo.update("prov_1", "renamed", "https://v2", Some("new-enc"), None, 90, 300)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .update(
+                "prov_1",
+                "renamed",
+                "https://v2",
+                Some("new-enc"),
+                None,
+                90,
+                300
+            )
+            .await
+            .unwrap());
         let after2 = repo.get("prov_1").await.unwrap().unwrap();
         assert_eq!(after2.api_key_enc, "new-enc");
 
         // 禁用
-        assert!(
-            repo.set_status("prov_1", "disabled", Some("quota_exhausted"), 400)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .set_status("prov_1", "disabled", Some("quota_exhausted"), 400)
+            .await
+            .unwrap());
         let dis = repo.get("prov_1").await.unwrap().unwrap();
         assert_eq!(dis.status, ProviderStatus::Disabled);
         assert_eq!(dis.disabled_reason.as_deref(), Some("quota_exhausted"));
         assert_eq!(dis.disabled_at, Some(400));
 
         // 重新启用应清空禁用信息
-        assert!(repo.set_status("prov_1", "active", None, 500).await.unwrap());
+        assert!(repo
+            .set_status("prov_1", "active", None, 500)
+            .await
+            .unwrap());
         let en = repo.get("prov_1").await.unwrap().unwrap();
         assert_eq!(en.status, ProviderStatus::Active);
         assert!(en.disabled_reason.is_none());
@@ -576,7 +592,16 @@ mod tests {
         let repo = ModelProviderMappingRepo::new(store);
 
         let m = repo
-            .create(&model_id, &provider_id, "claude-3-5-sonnet", 1, 80, "random", true, 1)
+            .create(
+                &model_id,
+                &provider_id,
+                "claude-3-5-sonnet",
+                1,
+                80,
+                "random",
+                true,
+                1,
+            )
             .await
             .unwrap();
         assert_eq!(m.strategy, RoutingStrategy::Random);
@@ -593,8 +618,15 @@ mod tests {
         );
 
         // 禁用
-        assert!(repo.update(&m.id, 2, 90, "sequential", false, 2).await.unwrap());
-        assert!(repo.list_by_logical_model(&model_id).await.unwrap().is_empty());
+        assert!(repo
+            .update(&m.id, 2, 90, "sequential", false, 2)
+            .await
+            .unwrap());
+        assert!(repo
+            .list_by_logical_model(&model_id)
+            .await
+            .unwrap()
+            .is_empty());
 
         let got2 = repo.get(&m.id).await.unwrap().unwrap();
         assert_eq!(got2.level, 2);

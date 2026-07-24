@@ -67,7 +67,11 @@ pub async fn chat_completions(
         .ok_or_else(|| ApiError::BadRequest(format!("unknown model: {}", req.model)))?;
 
     // 2. 查候选 provider 映射
-    let mappings = state.inner.mapping_repo.list_by_logical_model(&logical_model.id).await?;
+    let mappings = state
+        .inner
+        .mapping_repo
+        .list_by_logical_model(&logical_model.id)
+        .await?;
     if mappings.is_empty() {
         return Err(ApiError::NoProvider);
     }
@@ -107,7 +111,12 @@ pub async fn chat_completions(
     let hold = state
         .inner
         .credits_repo
-        .place_hold(&account_id, est_credits, Some(&Uuid::new_v4().to_string()), now)
+        .place_hold(
+            &account_id,
+            est_credits,
+            Some(&Uuid::new_v4().to_string()),
+            now,
+        )
         .await?
         .ok_or(ApiError::InsufficientCredits)?;
     let hold_id = hold.0;
@@ -171,7 +180,9 @@ pub async fn chat_completions(
                             .provider_repo
                             .set_status(&candidate.provider_id, "disabled", Some(&reason), now)
                             .await;
-                        last_error = Some(ApiError::Upstream(format!("provider unavailable: {reason}")));
+                        last_error = Some(ApiError::Upstream(format!(
+                            "provider unavailable: {reason}"
+                        )));
                     }
                     FallbackOutcome::NoFallback => {
                         // 非 quota 错误：释放冻结，直接返回
@@ -198,13 +209,14 @@ pub async fn chat_completions(
         .collect::<Vec<_>>()
         .join("\n");
 
-    let upstream_usage = response.usage.as_ref().map(|u| {
-        billing::usage_source::UpstreamUsage {
+    let upstream_usage = response
+        .usage
+        .as_ref()
+        .map(|u| billing::usage_source::UpstreamUsage {
             prompt_tokens: Some(u.prompt_tokens),
             completion_tokens: Some(u.completion_tokens),
             total_tokens: Some(u.total_tokens),
-        }
-    });
+        });
     let resolved = billing::resolve_usage(upstream_usage.as_ref(), &prompt_text, &completion_text);
     let actual_credits = billing::compute_credits(
         &resolved.tokens,
@@ -249,8 +261,11 @@ pub async fn chat_completions(
 
     // 供应商额度累加 + 80% 告警检测
     if let Some(pid) = &used_provider_id {
-        if let Ok((used, limit, threshold, alert_sent)) =
-            state.inner.quota_repo.add_usage(pid, resolved.tokens.total(), now).await
+        if let Ok((used, limit, threshold, alert_sent)) = state
+            .inner
+            .quota_repo
+            .add_usage(pid, resolved.tokens.total(), now)
+            .await
         {
             if !alert_sent {
                 if let Some(lim) = limit {
@@ -290,9 +305,10 @@ pub async fn chat_completions(
 
 fn map_upstream_error(e: router_llm::UpstreamError) -> ApiError {
     match e {
-        router_llm::UpstreamError::Status { status, body } => {
-            ApiError::Upstream(format!("upstream {status}: {}", &body[..body.len().min(200)]))
-        }
+        router_llm::UpstreamError::Status { status, body } => ApiError::Upstream(format!(
+            "upstream {status}: {}",
+            &body[..body.len().min(200)]
+        )),
         router_llm::UpstreamError::Timeout => ApiError::Upstream("upstream timeout".into()),
         router_llm::UpstreamError::Connect(msg) => ApiError::Upstream(format!("connect: {msg}")),
         router_llm::UpstreamError::Other(msg) => ApiError::Upstream(msg),
@@ -327,9 +343,16 @@ pub async fn get_usage(
     let account_id = principal.account_id.unwrap_or_default();
     let credits = state.inner.credits_repo.get(&account_id).await?;
     let period = chrono::Utc::now().format("%Y%m").to_string();
-    let (_, _, used_credits, calls) = state.inner.usage_repo.account_summary(&account_id, &period).await?;
+    let (_, _, used_credits, calls) = state
+        .inner
+        .usage_repo
+        .account_summary(&account_id, &period)
+        .await?;
 
-    let total_credits = credits.as_ref().map(|c| c.balance + c.used_or_zero()).unwrap_or(0);
+    let total_credits = credits
+        .as_ref()
+        .map(|c| c.balance + c.used_or_zero())
+        .unwrap_or(0);
     let remaining = credits.as_ref().map(|c| c.balance).unwrap_or(0);
 
     Ok(Json(serde_json::json!({

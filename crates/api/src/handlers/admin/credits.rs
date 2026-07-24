@@ -66,7 +66,13 @@ pub async fn adjust_credits(
     let new_balance = state
         .inner
         .credits_repo
-        .adjust(&req.account_id, req.delta, req.reason.as_deref(), Some(&principal.id), now)
+        .adjust(
+            &req.account_id,
+            req.delta,
+            req.reason.as_deref(),
+            Some(&principal.id),
+            now,
+        )
         .await?
         .ok_or_else(|| ApiError::BadRequest("insufficient balance for negative delta".into()))?;
 
@@ -125,7 +131,13 @@ pub async fn set_credits(
     let new_balance = state
         .inner
         .credits_repo
-        .adjust(&account_id, delta, req.reason.as_deref(), Some(&principal.id), now)
+        .adjust(
+            &account_id,
+            delta,
+            req.reason.as_deref(),
+            Some(&principal.id),
+            now,
+        )
         .await?
         .ok_or_else(|| ApiError::BadRequest("insufficient balance for negative delta".into()))?;
 

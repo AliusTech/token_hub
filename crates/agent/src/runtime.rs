@@ -20,7 +20,10 @@ pub struct AgentConfig {
 
 /// 运行 Agent。
 pub async fn run_agent(cfg: AgentConfig) -> anyhow::Result<()> {
-    tracing::info!(version = env!("CARGO_PKG_VERSION"), "TokenHub Agent starting");
+    tracing::info!(
+        version = env!("CARGO_PKG_VERSION"),
+        "TokenHub Agent starting"
+    );
 
     let store = storage::connect(&cfg.database_url).await?;
     let secret = auth::ServerSecret::new(&cfg.server_secret);

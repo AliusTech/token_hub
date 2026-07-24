@@ -169,7 +169,10 @@ async fn tun_toggle(admin_url: &str, token: &str) -> Result<()> {
     // 解析返回的 JSON 显示结果
     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body) {
         let active = v.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
-        let service_id = v.get("service_id").and_then(|v| v.as_str()).unwrap_or("N/A");
+        let service_id = v
+            .get("service_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("N/A");
         let url = v.get("url").and_then(|v| v.as_str()).unwrap_or("N/A");
 
         if active {
@@ -204,7 +207,10 @@ async fn tun_status(admin_url: &str, token: &str) -> Result<()> {
 
     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body) {
         let active = v.get("active").and_then(|v| v.as_bool()).unwrap_or(false);
-        let service_id = v.get("service_id").and_then(|v| v.as_str()).unwrap_or("N/A");
+        let service_id = v
+            .get("service_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("N/A");
         let url = v.get("url").and_then(|v| v.as_str()).unwrap_or("N/A");
 
         println!("\nTun 通道状态：");

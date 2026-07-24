@@ -84,7 +84,16 @@ pub async fn register_device(
     let _ = state
         .inner
         .audit_repo
-        .insert("admin", Some(&principal.id), "device.register", Some("device"), Some(&device_id), None, None, now)
+        .insert(
+            "admin",
+            Some(&principal.id),
+            "device.register",
+            Some("device"),
+            Some(&device_id),
+            None,
+            None,
+            now,
+        )
         .await;
 
     Ok(Json(serde_json::json!({

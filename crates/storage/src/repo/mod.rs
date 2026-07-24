@@ -15,7 +15,7 @@ pub mod usage_log;
 
 pub use account::AccountRepo;
 pub use admin_user::AdminUserRepo;
-pub use audit_log::{AuditLogRepo, AuditLogRecord};
+pub use audit_log::{AuditLogRecord, AuditLogRepo};
 pub use credits::CreditsRepo;
 pub use model::{ModelProviderRepo, ModelRepo};
 pub use policy::PolicyRepo;

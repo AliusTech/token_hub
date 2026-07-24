@@ -64,7 +64,9 @@ fn urlenc(s: &str) -> String {
             '?' => "%3F".to_string(),
             '&' => "%26".to_string(),
             '=' => "%3D".to_string(),
-            c if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '~' => c.to_string(),
+            c if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '~' => {
+                c.to_string()
+            }
             c => format!("%{:02X}", c as u32),
         })
         .collect()

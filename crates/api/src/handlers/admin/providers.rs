@@ -350,7 +350,11 @@ pub async fn list_mappings(
         return Err(ApiError::Forbidden);
     }
     let mappings = if let Some(lm_id) = &params.logical_model_id {
-        state.inner.mapping_repo.list_by_logical_model(lm_id).await?
+        state
+            .inner
+            .mapping_repo
+            .list_by_logical_model(lm_id)
+            .await?
     } else {
         state.inner.mapping_repo.list_all().await?
     };

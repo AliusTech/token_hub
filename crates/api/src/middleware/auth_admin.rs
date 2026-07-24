@@ -22,7 +22,10 @@ pub struct RequireAdmin(pub Principal);
 impl FromRequestParts<AppState> for RequireAdmin {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let token = extract_bearer(parts)?;
         let principal = authenticate_admin(&token, state).await?;
         Ok(RequireAdmin(principal))
@@ -89,21 +92,44 @@ pub async fn authenticate_admin(token: &str, state: &AppState) -> ApiResult<Prin
     }
 
     // MVP scope 策略：拥有 admin.write role → 超管（全部 scope）；否则只读
-    let scopes = if admin.roles.iter().any(|r| r == "admin.write" || r == "super_admin") {
+    let scopes = if admin
+        .roles
+        .iter()
+        .any(|r| r == "admin.write" || r == "super_admin")
+    {
         // 超管：全部 scope
         vec![
-            Scope::AdminRead, Scope::AdminWrite,
-            Scope::AccountsRead, Scope::AccountsWrite,
-            Scope::TokensRead, Scope::TokensWrite,
-            Scope::CreditsRead, Scope::CreditsWrite, Scope::CreditsAdmin,
-            Scope::ModelsRead, Scope::ModelsWrite,
-            Scope::ProvidersRead, Scope::ProvidersWrite,
-            Scope::ServicesRead, Scope::ServicesWrite,
-            Scope::PoliciesRead, Scope::PoliciesWrite,
-            Scope::ReportsRead, Scope::AuditRead,
+            Scope::AdminRead,
+            Scope::AdminWrite,
+            Scope::AccountsRead,
+            Scope::AccountsWrite,
+            Scope::TokensRead,
+            Scope::TokensWrite,
+            Scope::CreditsRead,
+            Scope::CreditsWrite,
+            Scope::CreditsAdmin,
+            Scope::ModelsRead,
+            Scope::ModelsWrite,
+            Scope::ProvidersRead,
+            Scope::ProvidersWrite,
+            Scope::ServicesRead,
+            Scope::ServicesWrite,
+            Scope::PoliciesRead,
+            Scope::PoliciesWrite,
+            Scope::ReportsRead,
+            Scope::AuditRead,
         ]
     } else {
-        vec![Scope::AdminRead, Scope::AccountsRead, Scope::TokensRead, Scope::CreditsRead, Scope::ModelsRead, Scope::ProvidersRead, Scope::ReportsRead, Scope::AuditRead]
+        vec![
+            Scope::AdminRead,
+            Scope::AccountsRead,
+            Scope::TokensRead,
+            Scope::CreditsRead,
+            Scope::ModelsRead,
+            Scope::ProvidersRead,
+            Scope::ReportsRead,
+            Scope::AuditRead,
+        ]
     };
 
     Ok(Principal {

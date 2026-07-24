@@ -347,11 +347,10 @@ mod tests {
 
         assert!(repo.list().await.unwrap().len() >= 1);
 
-        assert!(
-            repo.update("mdl_1", "basic2", None, 3, 4, "disabled", 200)
-                .await
-                .unwrap()
-        );
+        assert!(repo
+            .update("mdl_1", "basic2", None, 3, 4, "disabled", 200)
+            .await
+            .unwrap());
         let after = repo.get("mdl_1").await.unwrap().unwrap();
         assert_eq!(after.logical_name, "basic2");
         assert_eq!(after.description, None);
@@ -377,7 +376,16 @@ mod tests {
         let repo = ModelProviderRepo::new(store);
 
         let mp = repo
-            .create(&model_id, &provider_id, "gpt-4o", 1, 100, "sequential", true, 1)
+            .create(
+                &model_id,
+                &provider_id,
+                "gpt-4o",
+                1,
+                100,
+                "sequential",
+                true,
+                1,
+            )
             .await
             .unwrap();
         assert_eq!(mp.logical_model_id, model_id);
@@ -397,7 +405,10 @@ mod tests {
         assert_eq!(active[0].strategy, RoutingStrategy::Sequential);
 
         // 禁用
-        assert!(repo.update(&mp.id, 2, 50, "random", false, 2).await.unwrap());
+        assert!(repo
+            .update(&mp.id, 2, 50, "random", false, 2)
+            .await
+            .unwrap());
         let disabled = repo.list_by_logical_model(&model_id).await.unwrap();
         assert!(disabled.is_empty(), "disabled mapping should not be listed");
 

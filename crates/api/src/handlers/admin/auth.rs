@@ -10,7 +10,7 @@ use crate::error::{ApiError, ApiResult};
 use crate::middleware::auth_admin::authenticate_admin;
 use crate::middleware::auth_chat::extract_bearer;
 use crate::state::AppState;
-use axum::extract::{State, Request};
+use axum::extract::{Request, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
@@ -67,7 +67,13 @@ pub async fn login(
     let refresh_plain = auth::generate_session_token();
     let refresh_hash = auth::hash_session_token(&refresh_plain, state.secret());
     admin_repo
-        .create_refresh_token(&refresh_hash, &admin.id, &access_hash, now + REFRESH_TOKEN_TTL_SECS, now)
+        .create_refresh_token(
+            &refresh_hash,
+            &admin.id,
+            &access_hash,
+            now + REFRESH_TOKEN_TTL_SECS,
+            now,
+        )
         .await?;
 
     Ok(Json(serde_json::json!({
@@ -95,7 +101,9 @@ pub async fn refresh(
         .await?
         .ok_or_else(|| ApiError::Unauthorized("invalid refresh token".into()))?;
     if revoked || expires_at < chrono::Utc::now().timestamp() {
-        return Err(ApiError::Unauthorized("refresh token expired or revoked".into()));
+        return Err(ApiError::Unauthorized(
+            "refresh token expired or revoked".into(),
+        ));
     }
     // 吊销旧 refresh + 旧 access
     let _ = admin_repo.revoke_refresh_token(&refresh_hash).await;
@@ -110,7 +118,13 @@ pub async fn refresh(
     let new_refresh_plain = auth::generate_session_token();
     let new_refresh_hash = auth::hash_session_token(&new_refresh_plain, state.secret());
     admin_repo
-        .create_refresh_token(&new_refresh_hash, &admin_id, &access_hash, now + REFRESH_TOKEN_TTL_SECS, now)
+        .create_refresh_token(
+            &new_refresh_hash,
+            &admin_id,
+            &access_hash,
+            now + REFRESH_TOKEN_TTL_SECS,
+            now,
+        )
         .await?;
 
     Ok(Json(serde_json::json!({
@@ -122,10 +136,7 @@ pub async fn refresh(
 }
 
 /// POST /v1/admin/auth/logout — 吊销当前 access token
-pub async fn logout(
-    State(state): State<AppState>,
-    req: Request,
-) -> ApiResult<impl IntoResponse> {
+pub async fn logout(State(state): State<AppState>, req: Request) -> ApiResult<impl IntoResponse> {
     let (mut parts, _body) = req.into_parts();
     let token = extract_bearer(&parts)?;
     let admin_repo = storage::AdminUserRepo::new(state.inner.store.clone());
@@ -135,10 +146,7 @@ pub async fn logout(
 }
 
 /// GET /v1/admin/auth/me
-pub async fn me(
-    State(state): State<AppState>,
-    req: Request,
-) -> ApiResult<impl IntoResponse> {
+pub async fn me(State(state): State<AppState>, req: Request) -> ApiResult<impl IntoResponse> {
     let (mut parts, _body) = req.into_parts();
     let token = extract_bearer(&parts)?;
     let principal = authenticate_admin(&token, &state).await?;

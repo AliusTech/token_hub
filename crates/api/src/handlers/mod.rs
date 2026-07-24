@@ -1,8 +1,8 @@
 //! HTTP handler 模块。
 
+pub mod admin;
 pub mod chat;
 pub mod system;
-pub mod admin;
 
-pub use chat::{chat_completions, list_models, get_usage};
+pub use chat::{chat_completions, get_usage, list_models};
 pub use system::health;

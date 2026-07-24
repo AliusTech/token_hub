@@ -21,14 +21,21 @@ impl BalanceCache {
 
     /// 读取缓存的余额。未命中返回 Ok(None)（回源 SQLite）。
     pub async fn get(&self, account_id: &str) -> Result<Option<i64>, crate::CacheError> {
-        let val = self.store.get_string(&format!("{KEY_PREFIX}{account_id}")).await?;
+        let val = self
+            .store
+            .get_string(&format!("{KEY_PREFIX}{account_id}"))
+            .await?;
         Ok(val.and_then(|s| s.parse().ok()))
     }
 
     /// 写入/覆写余额（结算后调用）。
     pub async fn set(&self, account_id: &str, balance: i64) -> Result<(), crate::CacheError> {
         self.store
-            .set_string(&format!("{KEY_PREFIX}{account_id}"), &balance.to_string(), Some(TTL))
+            .set_string(
+                &format!("{KEY_PREFIX}{account_id}"),
+                &balance.to_string(),
+                Some(TTL),
+            )
             .await
     }
 

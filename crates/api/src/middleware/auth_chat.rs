@@ -19,7 +19,10 @@ pub struct RequireApiUser(pub Principal);
 impl FromRequestParts<AppState> for RequireApiUser {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         let token = extract_bearer(parts)?;
         let principal = authenticate_api_token(&token, state).await?;
         Ok(RequireApiUser(principal))
@@ -41,10 +44,7 @@ pub fn extract_bearer(parts: &Parts) -> ApiResult<String> {
 }
 
 /// 认证 API Token：缓存优先，回源 SQLite。
-pub async fn authenticate_api_token(
-    token: &str,
-    state: &AppState,
-) -> ApiResult<Principal> {
+pub async fn authenticate_api_token(token: &str, state: &AppState) -> ApiResult<Principal> {
     let token_hash = auth::hash_api_token(token, state.secret());
 
     // 1. 尝试缓存（内存或 Redis）

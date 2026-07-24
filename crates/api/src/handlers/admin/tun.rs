@@ -53,12 +53,23 @@ pub async fn tun_toggle(
 
     if current.active {
         // 开 → 关
-        tun.close().await.map_err(|e| ApiError::Internal(e.to_string()))?;
+        tun.close()
+            .await
+            .map_err(|e| ApiError::Internal(e.to_string()))?;
         // 审计
         let _ = state
             .inner
             .audit_repo
-            .insert("admin", Some(&principal.id), "tun.close", None, None, None, None, now)
+            .insert(
+                "admin",
+                Some(&principal.id),
+                "tun.close",
+                None,
+                None,
+                None,
+                None,
+                now,
+            )
             .await;
         Ok(Json(serde_json::json!({
             "action": "closed",
@@ -68,12 +79,27 @@ pub async fn tun_toggle(
         })))
     } else {
         // 关 → 开
-        let status = tun.open().await.map_err(|e| ApiError::Internal(e.to_string()))?;
+        let status = tun
+            .open()
+            .await
+            .map_err(|e| ApiError::Internal(e.to_string()))?;
         // 审计
         let _ = state
             .inner
             .audit_repo
-            .insert("admin", Some(&principal.id), "tun.open", None, None, Some(&format!("{{\"service_id\":\"{}\"}}", status.service_id.as_deref().unwrap_or(""))), None, now)
+            .insert(
+                "admin",
+                Some(&principal.id),
+                "tun.open",
+                None,
+                None,
+                Some(&format!(
+                    "{{\"service_id\":\"{}\"}}",
+                    status.service_id.as_deref().unwrap_or("")
+                )),
+                None,
+                now,
+            )
             .await;
         Ok(Json(serde_json::to_value(&status).unwrap_or_default()))
     }

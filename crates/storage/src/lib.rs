@@ -13,8 +13,8 @@ pub use connection::{connect, connect_in_memory, SqliteStore};
 // 顶层便捷 re-export
 pub use repo::AccountRepo;
 pub use repo::AdminUserRepo;
-pub use repo::AuditLogRepo;
 pub use repo::AuditLogRecord;
+pub use repo::AuditLogRepo;
 pub use repo::CreditsRepo;
 pub use repo::ModelProviderRepo;
 pub use repo::ModelRepo;

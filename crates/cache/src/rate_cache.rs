@@ -24,7 +24,10 @@ impl RateLimiter {
         window_secs: u64,
     ) -> Result<bool, crate::CacheError> {
         let full_key = format!("ratelimit:{key}");
-        let count = self.store.incr_with_expire(&full_key, 1, window_secs).await?;
+        let count = self
+            .store
+            .incr_with_expire(&full_key, 1, window_secs)
+            .await?;
         Ok(count <= max_count as i64)
     }
 }

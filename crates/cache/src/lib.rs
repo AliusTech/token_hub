@@ -8,20 +8,20 @@
 //! - 限流计数（滑动窗口）
 
 pub mod backend;
-pub mod memory;
-pub mod redis_backend;
-pub mod connection;
-pub mod token_cache;
 pub mod balance_cache;
+pub mod connection;
+pub mod memory;
 pub mod rate_cache;
+pub mod redis_backend;
+pub mod token_cache;
 
 pub use backend::CacheBackend;
-pub use memory::MemoryCache;
-pub use redis_backend::RedisCache;
-pub use connection::{connect, from_backend, memory as memory_store, CacheStore};
-pub use token_cache::{TokenInfo, TokenCache};
 pub use balance_cache::BalanceCache;
+pub use connection::{connect, from_backend, memory as memory_store, CacheStore};
+pub use memory::MemoryCache;
 pub use rate_cache::RateLimiter;
+pub use redis_backend::RedisCache;
+pub use token_cache::{TokenCache, TokenInfo};
 
 /// 缓存错误类型。
 #[derive(Debug, thiserror::Error)]

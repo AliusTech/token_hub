@@ -48,7 +48,9 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> anyhow::Result<Self> {
-        let run_mode_str = env_opt("RUN_MODE").or(env_opt("run_mode")).unwrap_or_else(|| "server".to_string());
+        let run_mode_str = env_opt("RUN_MODE")
+            .or(env_opt("run_mode"))
+            .unwrap_or_else(|| "server".to_string());
         let cfg = config::Config::builder()
             .set_default("chat_listen", "0.0.0.0:8080")?
             .set_default("admin_listen", "0.0.0.0:8081")?
@@ -56,22 +58,63 @@ impl Config {
             .set_default("database_url", "sqlite:///data/tokenhub.db")?
             .set_default("redis_url", "memory")?
             .set_default("server_secret", "")?
-            .set_override_option("database_url", env_opt("DATABASE_URL").or(env_opt("database_url")))?
+            .set_override_option(
+                "database_url",
+                env_opt("DATABASE_URL").or(env_opt("database_url")),
+            )?
             .set_override_option("redis_url", env_opt("REDIS_URL").or(env_opt("redis_url")))?
-            .set_override_option("chat_listen", env_opt("CHAT_LISTEN").or(env_opt("chat_listen")))?
-            .set_override_option("admin_listen", env_opt("ADMIN_LISTEN").or(env_opt("admin_listen")))?
-            .set_override_option("server_secret", env_opt("SERVER_SECRET").or(env_opt("server_secret")))?
+            .set_override_option(
+                "chat_listen",
+                env_opt("CHAT_LISTEN").or(env_opt("chat_listen")),
+            )?
+            .set_override_option(
+                "admin_listen",
+                env_opt("ADMIN_LISTEN").or(env_opt("admin_listen")),
+            )?
+            .set_override_option(
+                "server_secret",
+                env_opt("SERVER_SECRET").or(env_opt("server_secret")),
+            )?
             .set_override_option("run_mode", env_opt("RUN_MODE").or(env_opt("run_mode")))?
-            .set_override_option("agent_name", env_opt("AGENT_NAME").or(env_opt("agent_name")))?
-            .set_override_option("agent_platform", env_opt("AGENT_PLATFORM").or(env_opt("agent_platform")))?
-            .set_override_option("frp_server", env_opt("FRP_SERVER").or(env_opt("frp_server")))?
-            .set_override_option("frp_port", env_opt("FRP_PORT").or(env_opt("frp_port")).map(|s| s.parse::<u16>().ok()).flatten().map(|v| v.to_string()))?
+            .set_override_option(
+                "agent_name",
+                env_opt("AGENT_NAME").or(env_opt("agent_name")),
+            )?
+            .set_override_option(
+                "agent_platform",
+                env_opt("AGENT_PLATFORM").or(env_opt("agent_platform")),
+            )?
+            .set_override_option(
+                "frp_server",
+                env_opt("FRP_SERVER").or(env_opt("frp_server")),
+            )?
+            .set_override_option(
+                "frp_port",
+                env_opt("FRP_PORT")
+                    .or(env_opt("frp_port"))
+                    .map(|s| s.parse::<u16>().ok())
+                    .flatten()
+                    .map(|v| v.to_string()),
+            )?
             .set_override_option("frp_token", env_opt("FRP_TOKEN").or(env_opt("frp_token")))?
-            .set_override_option("frp_subdomain", env_opt("FRP_SUBDOMAIN").or(env_opt("frp_subdomain")))?
+            .set_override_option(
+                "frp_subdomain",
+                env_opt("FRP_SUBDOMAIN").or(env_opt("frp_subdomain")),
+            )?
             .set_override_option("frp_mode", env_opt("FRP_MODE").or(env_opt("frp_mode")))?
-            .set_override_option("frp_remote_port", env_opt("FRP_REMOTE_PORT").or(env_opt("frp_remote_port")).map(|s| s.parse::<u16>().ok()).flatten().map(|v| v.to_string()))?
+            .set_override_option(
+                "frp_remote_port",
+                env_opt("FRP_REMOTE_PORT")
+                    .or(env_opt("frp_remote_port"))
+                    .map(|s| s.parse::<u16>().ok())
+                    .flatten()
+                    .map(|v| v.to_string()),
+            )?
             .set_override_option("device_id", env_opt("DEVICE_ID").or(env_opt("device_id")))?
-            .set_override_option("device_key", env_opt("DEVICE_KEY").or(env_opt("device_key")))?
+            .set_override_option(
+                "device_key",
+                env_opt("DEVICE_KEY").or(env_opt("device_key")),
+            )?
             .build()?;
 
         let cfg: Config = cfg.try_deserialize()?;
