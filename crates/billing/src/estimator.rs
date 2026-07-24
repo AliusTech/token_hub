@@ -13,9 +13,8 @@ pub fn estimate_prompt_tokens(text: &str) -> i64 {
         // BPE 初始化失败时退化为字符数粗估（最坏情况高估，宁可多冻不少冻）
         Err(_) => return text.chars().count() as i64,
     };
-    match bpe.encode_with_special_tokens(text) {
-        tokens => tokens.len() as i64,
-    }
+    let tokens = bpe.encode_with_special_tokens(text);
+    tokens.len() as i64
 }
 
 /// 估算多条消息的总 prompt token 数（近似 OpenAI 的计算方式）。
