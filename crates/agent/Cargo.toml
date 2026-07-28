@@ -10,7 +10,7 @@ cache = { path = "../cache" }
 auth = { path = "../auth" }
 audit = { path = "../audit" }
 api = { path = "../api" }
-axum = "0.7"
+axum = "0.8"
 tokio = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
