@@ -8,7 +8,7 @@ domain = { path = "../domain" }
 storage = { path = "../storage" }
 jsonwebtoken = "9"
 argon2 = "0.5"
-sha2 = "0.10"
+sha2 = "0.11"
 hmac = "0.12"
 totp-rs = { version = "5", default-features = false, features = ["gen_secret"] }
 rand = "0.8"
