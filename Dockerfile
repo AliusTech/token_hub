@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # 多阶段构建。
 
-FROM rust:1.96-bookworm AS builder
+FROM rust:1.97-bookworm AS builder
 WORKDIR /app
 COPY . .
 RUN cargo build --release --bin token_hub
