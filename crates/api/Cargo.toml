@@ -14,7 +14,7 @@ audit = { path = "../audit" }
 axum = { version = "0.7", features = ["macros"] }
 tokio = { workspace = true }
 tower = "0.5"
-tower-http = { version = "0.6", features = ["trace", "cors", "limit"] }
+tower-http = { version = "0.7", features = ["trace", "cors", "limit"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
